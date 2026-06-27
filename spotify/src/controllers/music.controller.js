@@ -1,50 +1,48 @@
 const jwt = require('jsonwebtoken')
 
 const musicModel = require('../../models/music.model')
+const albumModel = require('../../models/album.model')
 const uploadFile = require('../../services/storage.service')
 
 
 
-async function uploadMusic(req, res, ) {
-    token = req.cookies.token;
+async function uploadMusic(req, res) {
+    const file = req.file;
+    const { title } = req.body;
 
-    if (!token) {
-        res.status(401).json({
-            message: "unauthorised user"
-        });
-        return;
-    }
+    const result = await uploadFile(file.buffer.toString('base64'));
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const music = await musicModel.create({
+        uri: result.url,
+        title: title,
+        artist: req.user.id
+    });
 
-        if (decoded.role !== "artist") {
-            res.status(401).json({
-                message: "unauthorised user"
-            });
-            return;
-        }
-
-        const file = req.file;
-        const { title } = req.body;
-
-        const result = await uploadFile(file.buffer.toString('base64'));
-
-        const music = await musicModel.create({
-            uri: result.url,
-            title: title,
-            artist: decoded.id
-        });
-
-        res.status(201).json({
-            message: "music created",
-            music
-        });
-    } catch (err) {
-        res.status(403).json({
-            message: 'user cannot access resource'
-        });
-    }
+    res.status(201).json({
+        message: "music created",
+        music
+    });
 }
 
-module.exports = { uploadMusic }
+async function createAlbum(req, res) {
+
+    const { title, musicIds } = req.body;
+
+    const album = albumModel.create({
+        title,
+        musics: musicIds,
+        artist: req.user.id
+    });
+
+    res.status(201).json({
+        message: "album created"
+    });
+}
+
+async function getAllMusics(req, res) {
+    const musics = await musicModel.find().populate('artist', 'username email')
+
+    res.status(200).json({ message: "music fetched", musics });
+}
+
+module.exports = { uploadMusic, createAlbum, getAllMusics }
