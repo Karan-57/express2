@@ -54,13 +54,6 @@ async function loginUser(req, res) {
         return;
     }
 
-    // const user = await userModel.findOne({
-    //     $or: [
-    //         { username },
-    //         { email }
-    //     ]
-    // });
-
     const isUserValid = await bcrypt.compare(password, user.password);
 
     if (!isUserValid) {
@@ -81,4 +74,11 @@ async function loginUser(req, res) {
     });
 }
 
-module.exports = { registerUser, loginUser }
+async function logoutUser(req, res) {
+    res.clearCookie('token');
+    res.status(200).json({
+        message: "user logged out"
+    });
+}
+
+module.exports = { registerUser, loginUser, logoutUser }
